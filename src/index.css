@@ -1,0 +1,25 @@
+@import 'tailwindcss';
+@import 'tailwindcss/preflight';
+@import 'tailwindcss/utilities';
+
+/* Mobile-first стили */
+@layer base {
+  body {
+    @apply text-gray-800 bg-gray-50;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg active:scale-[0.98] transition-all;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-6 rounded-lg active:scale-[0.98] transition-all;
+  }
+  
+  .card-shadow {
+    @apply shadow-md hover:shadow-lg transition-shadow;
+  }
+}
