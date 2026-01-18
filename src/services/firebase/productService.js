@@ -7,42 +7,89 @@ import {
   updateDoc, 
   deleteDoc, 
   query, 
-  where, 
-  orderBy,
+  where,
   serverTimestamp 
 } from 'firebase/firestore';
 import { db } from './config';
+import { cloudinaryService } from '../cloudinary/cloudinaryService';
 
 export const productService = {
-  // Получить все активные товары
   async getAllProducts() {
     try {
       const productsRef = collection(db, 'products');
-      const q = query(
-        productsRef, 
-        where('active', '==', true),
-        orderBy('createdAt', 'desc')
-      );
+      const q = query(productsRef, where('active', '==', true));
       
       const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      const products = snapshot.docs.map(doc => {
+        const data = doc.data();
+        
+        // Оптимизируем изображения для мобильных
+        const optimizedImages = data.images?.map(img => 
+          cloudinaryService.getOptimizedUrl(img, { width: 500, height: 500 })
+        ) || [];
+        
+        return {
+          id: doc.id,
+          ...data,
+          images: optimizedImages
+        };
+      });
+      
+      // Сортировка на клиенте по дате создания
+      return products.sort((a, b) => {
+        const dateA = a.createdAt?.toDate?.() || new Date(0);
+        const dateB = b.createdAt?.toDate?.() || new Date(0);
+        return dateB - dateA;
+      });
+      
     } catch (error) {
       console.error('Error getting products:', error);
-      throw error;
+      
+      // Если ошибка индекса, пробуем получить все и фильтровать на клиенте
+      if (error.code === 'failed-precondition') {
+        try {
+          const productsRef = collection(db, 'products');
+          const snapshot = await getDocs(productsRef);
+          const allProducts = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          
+          return allProducts
+            .filter(product => product.active !== false)
+            .map(product => ({
+              ...product,
+              images: product.images?.map(img => 
+                cloudinaryService.getOptimizedUrl(img, { width: 500, height: 500 })
+              ) || []
+            }));
+        } catch (fallbackError) {
+          console.error('Fallback error:', fallbackError);
+        }
+      }
+      
+      return [];
     }
   },
 
-  // Получить товар по ID
   async getProductById(id) {
     try {
       const docRef = doc(db, 'products', id);
       const docSnap = await getDoc(docRef);
       
       if (docSnap.exists()) {
-        return { id: docSnap.id, ...docSnap.data() };
+        const data = docSnap.data();
+        
+        // Оптимизируем изображения
+        const optimizedImages = data.images?.map(img => 
+          cloudinaryService.getOptimizedUrl(img, { width: 800, height: 800 })
+        ) || [];
+        
+        return { 
+          id: docSnap.id, 
+          ...data,
+          images: optimizedImages
+        };
       }
       return null;
     } catch (error) {
@@ -51,7 +98,6 @@ export const productService = {
     }
   },
 
-  // Создать новый товар
   async createProduct(productData) {
     try {
       const productsRef = collection(db, 'products');
@@ -61,7 +107,10 @@ export const productService = {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         views: 0,
-        sales: 0
+        sales: 0,
+        rating: 0,
+        reviews: 0,
+        stock: productData.stock || 100
       };
       
       const docRef = await addDoc(productsRef, productWithMeta);
@@ -72,7 +121,6 @@ export const productService = {
     }
   },
 
-  // Обновить товар
   async updateProduct(id, productData) {
     try {
       const docRef = doc(db, 'products', id);
@@ -87,7 +135,6 @@ export const productService = {
     }
   },
 
-  // Мягкое удаление (деактивация)
   async deleteProduct(id) {
     try {
       const docRef = doc(db, 'products', id);
@@ -102,7 +149,6 @@ export const productService = {
     }
   },
 
-  // Увеличить счетчик просмотров
   async incrementViews(id) {
     try {
       const docRef = doc(db, 'products', id);
@@ -114,28 +160,6 @@ export const productService = {
       }
     } catch (error) {
       console.error('Error incrementing views:', error);
-    }
-  },
-
-  // Поиск товаров
-  async searchProducts(searchTerm) {
-    try {
-      const productsRef = collection(db, 'products');
-      const q = query(
-        productsRef,
-        where('active', '==', true),
-        where('title', '>=', searchTerm),
-        where('title', '<=', searchTerm + '\uf8ff')
-      );
-      
-      const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-    } catch (error) {
-      console.error('Error searching products:', error);
-      throw error;
     }
   }
 };
