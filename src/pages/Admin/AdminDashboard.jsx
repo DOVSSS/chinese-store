@@ -1,13 +1,24 @@
-import { useState } from 'react';
-import { Link, Outlet, useNavigate } from 'react-router-dom';
-import { FaBox, FaPlus, FaSignOutAlt, FaChartBar, FaCog } from 'react-icons/fa';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { FaBox, FaPlus, FaSignOutAlt, FaChartBar, FaCog, FaShoppingCart } from 'react-icons/fa';
 import { auth } from '../../services/firebase/config';
 import { useAuthStore } from '../../store/store';
 
 function AdminDashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
   const clearUser = useAuthStore((state) => state.clearUser);
-  const [activeTab, setActiveTab] = useState('products');
+  
+  // Определяем активную вкладку из пути
+  const getActiveTab = () => {
+    const path = location.pathname;
+    if (path.includes('/orders')) return 'orders';
+    if (path.includes('/add')) return 'add';
+    if (path.includes('/stats')) return 'stats';
+    if (path.includes('/settings')) return 'settings';
+    return 'products';
+  };
+
+  const activeTab = getActiveTab();
 
   const handleLogout = async () => {
     try {
@@ -21,6 +32,7 @@ function AdminDashboard() {
 
   const menuItems = [
     { id: 'products', label: 'Товары', icon: <FaBox />, path: '/admin/dashboard' },
+    { id: 'orders', label: 'Заказы', icon: <FaShoppingCart />, path: '/admin/dashboard/orders' },
     { id: 'add', label: 'Добавить товар', icon: <FaPlus />, path: '/admin/dashboard/add' },
     { id: 'stats', label: 'Статистика', icon: <FaChartBar />, path: '/admin/dashboard/stats' },
     { id: 'settings', label: 'Настройки', icon: <FaCog />, path: '/admin/dashboard/settings' },
@@ -37,10 +49,13 @@ function AdminDashboard() {
         
         <nav className="mt-8">
           {menuItems.map((item) => (
-            <Link
+            <a
               key={item.id}
-              to={item.path}
-              onClick={() => setActiveTab(item.id)}
+              href={item.path}
+              onClick={(e) => {
+                e.preventDefault();
+                navigate(item.path);
+              }}
               className={`flex items-center gap-3 px-6 py-3 transition-colors ${
                 activeTab === item.id
                   ? 'bg-blue-50 text-blue-600 border-r-4 border-blue-600'
@@ -49,7 +64,7 @@ function AdminDashboard() {
             >
               <span className="text-lg">{item.icon}</span>
               <span>{item.label}</span>
-            </Link>
+            </a>
           ))}
         </nav>
         
@@ -68,25 +83,28 @@ function AdminDashboard() {
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t z-50">
         <div className="flex justify-around py-3">
           {menuItems.map((item) => (
-            <Link
+            <a
               key={item.id}
-              to={item.path}
-              onClick={() => setActiveTab(item.id)}
+              href={item.path}
+              onClick={(e) => {
+                e.preventDefault();
+                navigate(item.path);
+              }}
               className={`flex flex-col items-center p-2 ${
                 activeTab === item.id ? 'text-blue-600' : 'text-gray-600'
               }`}
             >
               <div className="text-xl">{item.icon}</div>
               <span className="text-xs mt-1">{item.label}</span>
-            </Link>
+            </a>
           ))}
         </div>
       </div>
 
-      {/* Основной контент */}
+      {/* Основной контент - Outlet для дочерних роутов */}
       <div className="md:ml-64 pb-16 md:pb-0">
         <div className="p-4 md:p-6">
-          <Outlet />
+          <Outlet /> {/* ВАЖНО: здесь отображаются дочерние роуты */}
         </div>
       </div>
     </div>

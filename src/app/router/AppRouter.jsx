@@ -1,4 +1,4 @@
-import { Routes, Route, BrowserRouter, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
 import Header from '../../components/Header/Header';
 import BottomNav from '../../components/BottomNav/BottomNav';
@@ -10,12 +10,13 @@ const Home = lazy(() => import('../../pages/Home/Home'));
 const ProductPage = lazy(() => import('../../pages/Product/ProductPage'));
 const Cart = lazy(() => import('../../pages/Cart/Cart'));
 const Favorites = lazy(() => import('../../pages/Favorites/Favorites'));
-const CatalogPage = lazy(() => import('../../pages/Catalog/CatalogPage')); // Добавьте
-const SearchPage = lazy(() => import('../../pages/Search/SearchPage')); // Добавьте
+const CatalogPage = lazy(() => import('../../pages/Catalog/CatalogPage'));
+const SearchPage = lazy(() => import('../../pages/Search/SearchPage'));
 const AdminLogin = lazy(() => import('../../pages/Admin/AdminLogin'));
 const AdminDashboard = lazy(() => import('../../pages/Admin/AdminDashboard'));
 const AdminProducts = lazy(() => import('../../pages/Admin/AdminProducts'));
 const AddProduct = lazy(() => import('../../pages/Admin/AddProduct'));
+const AdminOrders = lazy(() => import('../../pages/Admin/AdminOrders'));
 
 // Защищенный роут для админа
 const AdminRoute = ({ children }) => {
@@ -32,61 +33,72 @@ const AdminRoute = ({ children }) => {
   return children;
 };
 
+// Компонент для отображения Header/BottomNav на публичных страницах
+const PublicLayout = () => {
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      <main className="flex-1 pt-16">
+        <Outlet />
+      </main>
+      <BottomNav />
+    </div>
+  );
+};
+
+// Компонент для админских страниц (без Header/BottomNav)
+const AdminLayout = () => {
+  return (
+    <div className="min-h-screen">
+      <Outlet />
+    </div>
+  );
+};
+
 function AppRouter() {
   return (
-    <BrowserRouter>
-      <div className="min-h-screen flex flex-col">
-        {/* Header показывается везде, кроме админских страниц */}
-        <Routes>
-          <Route path="/admin/*" element={null} />
-          <Route path="*" element={<Header />} />
-        </Routes>
+    <Suspense fallback={<Loader />}>
+      <Routes>
+        {/* Публичные маршруты с Header и BottomNav */}
+        <Route element={<PublicLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/catalog" element={<CatalogPage />} />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/product/:id" element={<ProductPage />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/favorites" element={<Favorites />} />
+        </Route>
         
-        <main className="flex-1 pt-16">
-          <Suspense fallback={<Loader />}>
-            <Routes>
-              {/* Публичные маршруты */}
-              <Route path="/" element={<Home />} />
-              <Route path="/catalog" element={<CatalogPage />} /> {/* Добавьте */}
-              <Route path="/search" element={<SearchPage />} /> {/* Добавьте */}
-              <Route path="/product/:id" element={<ProductPage />} />
-              <Route path="/cart" element={<Cart />} />
-              <Route path="/favorites" element={<Favorites />} />
-              
-              {/* Админские маршруты */}
-              <Route path="/admin/login" element={<AdminLogin />} />
-              
-              <Route path="/admin/dashboard" element={
-                <AdminRoute>
-                  <AdminDashboard />
-                </AdminRoute>
-              }>
-                <Route index element={<AdminProducts />} />
-                <Route path="add" element={<AddProduct />} />
-                <Route path="products" element={<AdminProducts />} />
-              </Route>
-              
-              {/* 404 */}
-              <Route path="*" element={
-                <div className="min-h-screen flex items-center justify-center">
-                  <div className="text-center">
-                    <h1 className="text-4xl font-bold mb-4">404</h1>
-                    <p className="text-gray-600 mb-8">Страница не найдена</p>
-                    <a href="/" className="btn-primary">На главную</a>
-                  </div>
-                </div>
-              } />
-            </Routes>
-          </Suspense>
-        </main>
+        {/* Админские маршруты без Header и BottomNav */}
+        <Route element={<AdminLayout />}>
+          <Route path="/admin/login" element={<AdminLogin />} />
+          
+          <Route path="/admin/dashboard" element={
+            <AdminRoute>
+              <AdminDashboard />
+            </AdminRoute>
+          }>
+            <Route index element={<AdminProducts />} />
+            <Route path="add" element={<AddProduct />} />
+            <Route path="products" element={<AdminProducts />} />
+            <Route path="orders" element={<AdminOrders />} />
+            <Route path="stats" element={<div>Статистика</div>} />
+            <Route path="settings" element={<div>Настройки</div>} />
+          </Route>
+        </Route>
         
-        {/* BottomNav показывается только на мобильных и не в админке */}
-        <Routes>
-          <Route path="/admin/*" element={null} />
-          <Route path="*" element={<BottomNav />} />
-        </Routes>
-      </div>
-    </BrowserRouter>
+        {/* 404 */}
+        <Route path="*" element={
+          <div className="min-h-screen flex items-center justify-center">
+            <div className="text-center">
+              <h1 className="text-4xl font-bold mb-4">404</h1>
+              <p className="text-gray-600 mb-8">Страница не найдена</p>
+              <a href="/" className="btn-primary">На главную</a>
+            </div>
+          </div>
+        } />
+      </Routes>
+    </Suspense>
   );
 }
 

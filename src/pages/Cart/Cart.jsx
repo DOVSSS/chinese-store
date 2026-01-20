@@ -3,24 +3,27 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FaTrash, FaShoppingBag, FaArrowLeft } from 'react-icons/fa';
 import CartItem from '../../features/cart/CartItem';
 import { useCartStore } from '../../store/store';
+import OrderForm from './components/OrderForm';
 
 function Cart() {
   const navigate = useNavigate();
   const { items, clearCart, getTotal, removeFromCart, updateQuantity } = useCartStore();
-  const [isOrdering, setIsOrdering] = useState(false);
+  const [showOrderForm, setShowOrderForm] = useState(false);
+  const [orderComplete, setOrderComplete] = useState(false);
+  const [orderNumber, setOrderNumber] = useState('');
 
-  const handleOrder = () => {
-    setIsOrdering(true);
-    // TODO: Реализовать оформление заказа
-    setTimeout(() => {
-      alert('Заказ оформлен! В будущем здесь будет интеграция с оплатой.');
-      clearCart();
-      setIsOrdering(false);
-      navigate('/');
-    }, 1500);
+  const handleOrderSuccess = (number) => {
+    setOrderNumber(number);
+    setOrderComplete(true);
+    setShowOrderForm(false);
   };
 
-  if (items.length === 0) {
+  const handleCloseSuccess = () => {
+    setOrderComplete(false);
+    navigate('/');
+  };
+
+  if (items.length === 0 && !orderComplete) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
         <div className="text-center">
@@ -37,6 +40,40 @@ function Cart() {
           >
             Перейти к покупкам
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Экран успешного оформления заказа
+  if (orderComplete) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="text-green-600 text-4xl">✓</div>
+          </div>
+          <h2 className="text-2xl font-bold mb-3">Заказ оформлен!</h2>
+          <p className="text-gray-600 mb-4">
+            Номер вашего заказа: <span className="font-mono font-bold">{orderNumber}</span>
+          </p>
+          <p className="text-gray-500 mb-6">
+            С вами свяжется менеджер для подтверждения заказа и уточнения деталей доставки
+          </p>
+          <div className="space-y-3">
+            <button
+              onClick={handleCloseSuccess}
+              className="w-full btn-primary"
+            >
+              Вернуться на главную
+            </button>
+            <button
+              onClick={() => navigate('/products')}
+              className="w-full py-3 border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              Продолжить покупки
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -87,18 +124,10 @@ function Cart() {
         </div>
         
         <button
-          onClick={handleOrder}
-          disabled={isOrdering}
-          className="w-full btn-primary flex items-center justify-center gap-2 py-4 text-lg disabled:opacity-50"
+          onClick={() => setShowOrderForm(true)}
+          className="w-full btn-primary py-4 text-lg"
         >
-          {isOrdering ? (
-            <>
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-              Оформляем...
-            </>
-          ) : (
-            'Оформить заказ'
-          )}
+          Оформить заказ
         </button>
         
         <p className="text-xs text-gray-500 text-center">
@@ -108,6 +137,14 @@ function Cart() {
 
       {/* Отступ для фиксированной панели */}
       <div className="h-32"></div>
+
+      {/* Форма оформления заказа */}
+      {showOrderForm && (
+        <OrderForm
+          onClose={() => setShowOrderForm(false)}
+          onSuccess={handleOrderSuccess}
+        />
+      )}
     </div>
   );
 }
