@@ -6,7 +6,7 @@ import { useAuthStore } from '../../store/store';
 function AdminDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
-  const clearUser = useAuthStore((state) => state.clearUser);
+  const clearUser = useAuthStore((state) => state.clearAuth);
   
   // Определяем активную вкладку из пути
   const getActiveTab = () => {
@@ -23,7 +23,7 @@ function AdminDashboard() {
   const handleLogout = async () => {
     try {
       await auth.signOut();
-      clearUser();
+     clearAuth(); 
       navigate('/admin/login');
     } catch (error) {
       console.error('Ошибка выхода:', error);

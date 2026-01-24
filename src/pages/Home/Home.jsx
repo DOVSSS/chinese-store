@@ -17,7 +17,7 @@ function Home() {
       const productsRef = collection(db, 'products');
       const q = query(
         productsRef, 
-        where('active', '==', true),
+      //  where('active', '==', true),
         limit(20)
       );
       

@@ -20,7 +20,7 @@ function ProductPage() {
   useEffect(() => {
     if (id) {
       loadProduct();
-      productService.incrementViews(id);
+     
     }
   }, [id]);
 
@@ -36,11 +36,21 @@ function ProductPage() {
   };
 
   const handleAddToCart = () => {
-    if (product) {
-      const productWithQuantity = { ...product, quantity };
-      addToCart(productWithQuantity);
-    }
-  };
+  if (product) {
+    const productWithQuantity = { 
+      id: product.id,
+      title: product.title,
+      price: product.price,
+      images: product.images || [],
+      quantity: quantity // Используем выбранное количество
+    };
+    console.log('Adding to cart from product page:', productWithQuantity);
+    addToCart(productWithQuantity);
+    
+    // Можно добавить уведомление
+    alert(`Добавлено ${quantity} шт. в корзину!`);
+  }
+};
 
   const handleShare = async () => {
     if (navigator.share && product) {

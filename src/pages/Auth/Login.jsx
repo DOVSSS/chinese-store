@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { loginUser } from '../../services/firebase/authService';
 import { useAuthStore } from '../../store/store';
 
-function AdminLogin() {
+function Login() {
   const navigate = useNavigate();
   const setAuthData = useAuthStore((state) => state.setAuthData);
   const [credentials, setCredentials] = useState({
@@ -20,23 +20,17 @@ function AdminLogin() {
 
     try {
       const { user, userData } = await loginUser(credentials.email, credentials.password);
+      setAuthData(user, userData);
       
-      // Проверяем, является ли пользователь админом
+      // Перенаправляем в зависимости от роли
       if (userData.role === 'admin') {
-        setAuthData(user, userData);
         navigate('/admin/dashboard');
       } else {
-        setError('Доступ запрещён. Только для администраторов.');
-        // Но все равно сохраняем данные пользователя
-        setAuthData(user, userData);
         navigate('/');
       }
     } catch (error) {
       console.error('Ошибка входа:', error);
-      setError(error.message.includes('user-not-found') || error.message.includes('wrong-password')
-        ? 'Неверный email или пароль'
-        : 'Ошибка при входе'
-      );
+      setError('Неверный email или пароль');
     } finally {
       setLoading(false);
     }
@@ -47,10 +41,10 @@ function AdminLogin() {
       <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-800 mb-2">
-            Вход в админку
+            Вход в аккаунт
           </h1>
           <p className="text-gray-600">
-            Доступ только для администраторов магазина
+            Войдите для совершения покупок
           </p>
         </div>
 
@@ -74,7 +68,7 @@ function AdminLogin() {
                 email: e.target.value
               })}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-              placeholder="admin@example.com"
+              placeholder="ваш@email.com"
             />
           </div>
 
@@ -105,21 +99,24 @@ function AdminLogin() {
         </form>
 
         <div className="mt-6 pt-6 border-t border-gray-200">
-          <p className="text-center text-sm text-gray-600">
-            Тестовый доступ: admin@example.com / admin123
+          <p className="text-center text-gray-600 text-sm">
+            Нет аккаунта?{' '}
+            <Link to="/register" className="text-blue-600 hover:text-blue-700 font-medium">
+              Зарегистрироваться
+            </Link>
           </p>
-          <div className="text-center mt-2">
+          <p className="text-center mt-2">
             <button
-              onClick={() => navigate('/login')}
-              className="text-blue-600 hover:text-blue-700 text-sm"
+              onClick={() => navigate('/admin/login')}
+              className="text-gray-500 hover:text-gray-700 text-sm"
             >
-              Войти как пользователь
+              Войти как администратор
             </button>
-          </div>
+          </p>
         </div>
       </div>
     </div>
   );
 }
 
-export default AdminLogin;
+export default Login;

@@ -17,17 +17,37 @@ const AdminDashboard = lazy(() => import('../../pages/Admin/AdminDashboard'));
 const AdminProducts = lazy(() => import('../../pages/Admin/AdminProducts'));
 const AddProduct = lazy(() => import('../../pages/Admin/AddProduct'));
 const AdminOrders = lazy(() => import('../../pages/Admin/AdminOrders'));
+const Login = lazy(() => import('../../pages/Auth/Login')); // <-- ДОБАВЬ
+const Register = lazy(() => import('../../pages/Auth/Register')); // <-- ДОБАВЬ
+const Profile = lazy(() => import('../../pages/Profile/Profile')); // <-- ДОБАВЬ
 
 // Защищенный роут для админа
 const AdminRoute = ({ children }) => {
-  const { isAdmin, user } = useAuthStore();
+  const { isAdmin, user, isLoading } = useAuthStore();
+  
+  if (isLoading) {
+    return <Loader />;
+  }
   
   if (!user) {
     return <Navigate to="/admin/login" replace />;
   }
   
   if (!isAdmin) {
-    return <Navigate to="/" replace />;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-4">Доступ запрещен</h2>
+          <p className="text-gray-600 mb-6">Только для администраторов</p>
+          <button
+            onClick={() => navigate('/')}
+            className="btn-primary"
+          >
+            На главную
+          </button>
+        </div>
+      </div>
+    );
   }
   
   return children;
@@ -55,6 +75,15 @@ const AdminLayout = () => {
   );
 };
 
+// Компонент для страниц авторизации (без Header/BottomNav)
+const AuthLayout = () => {
+  return (
+    <div className="min-h-screen">
+      <Outlet />
+    </div>
+  );
+};
+
 function AppRouter() {
   return (
     <Suspense fallback={<Loader />}>
@@ -67,6 +96,13 @@ function AppRouter() {
           <Route path="/product/:id" element={<ProductPage />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/favorites" element={<Favorites />} />
+          <Route path="/profile" element={<Profile />} /> {/* <-- ДОБАВЬ */}
+        </Route>
+        
+        {/* Маршруты авторизации (без Header/BottomNav) */}
+        <Route element={<AuthLayout />}>
+          <Route path="/login" element={<Login />} /> {/* <-- ДОБАВЬ */}
+          <Route path="/register" element={<Register />} /> {/* <-- ДОБАВЬ */}
         </Route>
         
         {/* Админские маршруты без Header и BottomNav */}

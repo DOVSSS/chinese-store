@@ -1,10 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
-import { FaHome, FaShoppingCart, FaHeart, FaUser } from 'react-icons/fa';
+import { FaHome, FaShoppingCart, FaHeart, FaUser, FaUserShield } from 'react-icons/fa';
 import { useCartStore } from '../../store/store';
+import { useAuthStore } from '../../store/store';
 
 function BottomNav() {
   const location = useLocation();
-  const totalItems = useCartStore((state) => state.getTotalItems());
+  const totalItems = useCartStore((state) => state.totalItems); // Изменено: свойство вместо функции
+  const { isAdmin, user } = useAuthStore();
   
   const navItems = [
     { path: '/', icon: <FaHome />, label: 'Главная' },
@@ -23,7 +25,11 @@ function BottomNav() {
       ), 
       label: 'Корзина' 
     },
-    { path: '/admin/login', icon: <FaUser />, label: 'Админ' },
+    { 
+      path: user ? '/profile' : '/login',
+      icon: isAdmin ? <FaUserShield className="text-blue-600" /> : <FaUser />,
+      label: user ? (isAdmin ? 'Админ' : 'Профиль') : 'Войти'
+    },
   ];
 
   return (

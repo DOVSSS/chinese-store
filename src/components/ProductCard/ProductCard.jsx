@@ -1,32 +1,49 @@
 import { Link } from 'react-router-dom';
-import { FaHeart, FaRegHeart } from 'react-icons/fa';
-import { useFavoritesStore } from '../../store/store';
+import { FaHeart, FaRegHeart, FaShoppingCart } from 'react-icons/fa';
+import { useFavoritesStore, useCartStore } from '../../store/store';
 import { cloudinaryService } from '../../services/cloudinary/cloudinaryService';
 
 function ProductCard({ product }) {
   const isFavorite = useFavoritesStore((state) => state.isFavorite(product.id));
   const toggleFavorite = useFavoritesStore((state) => state.toggleFavorite);
+  const addToCart = useCartStore((state) => state.addToCart);
+
+  // Локальный fallback для изображений (без внешних запросов)
+  const getFallbackImage = () => {
+    return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgdmlld0JveD0iMCAwIDMwMCAzMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSIzMDAiIGZpbGw9IiNGMEYyRjQiLz48cGF0aCBkPSJNMTUwIDk1QzEyMS41NjEgOTUgOTggMTE4LjU2MSA5OCAxNDdDOTggMTc1LjQzOSAxMjEuNTYxIDE5OSAxNTAgMTk5QzE3OC40MzkgMTk5IDIwMiAxNzUuNDM5IDIwMiAxNDdDMjAyIDExOC41NjEgMTc4LjQzOSA5NSAxNTAgOTVaIiBmaWxsPSIjRDhEQURCIi8+PHBhdGggZD0iTTU1IDIxMEwyNDUgMjEwTDIyMiAyNTZMNzggMjU2TDU1IDIxMFoiIGZpbGw9IiNEOERBREIiLz48L3N2Zz4=';
+  };
 
   // Получаем оптимизированное изображение
   const getProductImage = () => {
     if (!product.images || product.images.length === 0) {
-      return 'https://via.placeholder.com/900x900/cccccc/ffffff?text=No+Image';
+      return getFallbackImage();
     }
     
     const firstImage = product.images[0];
     
+    // Проверяем, не является ли это blob URL
+    if (typeof firstImage === 'string' && firstImage.startsWith('blob:')) {
+      console.warn('Blob URL detected, using fallback');
+      return getFallbackImage();
+    }
+    
     if (typeof firstImage === 'string' && firstImage.includes('cloudinary.com')) {
-      return cloudinaryService.getOptimizedUrl(firstImage, { 
-        width: 900, 
-        height: 900 
-      });
+      try {
+        return cloudinaryService.getOptimizedUrl(firstImage, { 
+          width: 900, 
+          height: 900 
+        });
+      } catch (error) {
+        console.error('Cloudinary error:', error);
+        return getFallbackImage();
+      }
     }
     
     if (typeof firstImage === 'string') {
       return firstImage;
     }
     
-    return 'https://via.placeholder.com/900x900/cccccc/ffffff?text=No+Image';
+    return getFallbackImage();
   };
 
   const imageUrl = getProductImage();
@@ -59,6 +76,36 @@ function ProductCard({ product }) {
 
   const isNew = checkIfNew();
 
+  // Обработчик ошибок изображения
+  const handleImageError = (e) => {
+    e.target.src = getFallbackImage();
+    e.target.onerror = null; // Предотвращаем бесконечный цикл
+  };
+
+ // Обработчик добавления в корзину
+const handleAddToCart = (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  
+  console.log('Adding to cart:', {
+    id: product.id,
+    title: product.title,
+    price: product.price,
+    images: product.images
+  });
+  
+  addToCart({
+    id: product.id,
+    title: product.title,
+    price: product.price,
+    images: product.images || [],
+    quantity: 1 // Добавляем поле quantity!
+  });
+  
+  // Можно добавить уведомление
+  // alert('Товар добавлен в корзину!');
+};
+
   return (
     <div className="group bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col h-full">
       <div className="relative flex-grow">
@@ -69,9 +116,8 @@ function ProductCard({ product }) {
               alt={product.title || 'Товар'}
               className="absolute top-0 left-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               loading="lazy"
-              onError={(e) => {
-                e.target.src = 'https://via.placeholder.com/900x900/cccccc/ffffff?text=Image+Error';
-              }}
+              onError={handleImageError}
+              crossOrigin="anonymous"
             />
             
             {/* Бейдж новинки в левом верхнем углу */}
@@ -126,6 +172,16 @@ function ProductCard({ product }) {
               {product.price ? `${product.price.toLocaleString('ru-RU')} ₽` : 'Цена не указана'}
             </span>
           </div>
+          
+          {/* Кнопка добавления в корзину */}
+          <button
+            onClick={handleAddToCart}
+            className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            aria-label="Добавить в корзину"
+            title="Добавить в корзину"
+          >
+            <FaShoppingCart className="text-xs" />
+          </button>
         </div>
       </div>
     </div>

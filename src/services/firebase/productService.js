@@ -22,7 +22,7 @@ export const searchProducts = async (searchTerm) => {
     
     // Получаем все активные товары
     const productsRef = collection(db, 'products');
-    const q = query(productsRef, where('active', '==', true));
+  //  const q = query(productsRef, where('active', '==', true));
     const snapshot = await getDocs(q);
     
     const searchLower = searchTerm.toLowerCase();
@@ -60,12 +60,13 @@ export const searchProducts = async (searchTerm) => {
 };
 
 // Получение всех товаров (ОДНА функция!)
+// Получение всех товаров (ОДНА функция!)
 export const getProducts = async () => {
   try {
     const productsRef = collection(db, 'products');
-    const q = query(productsRef, where('active', '==', true));
+    // УБЕРИТЕ where('active', '==', true) - загружаем ВСЕ товары
+    const snapshot = await getDocs(productsRef);
     
-    const snapshot = await getDocs(q);
     const products = snapshot.docs.map(doc => {
       const data = doc.data();
       
